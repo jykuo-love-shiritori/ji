@@ -10,7 +10,7 @@ RUN pnpm build
 RUN pnpm prune --prod
 
 FROM rust:alpine AS backend
-RUN apk add musl-dev
+RUN apk add musl-dev openssl openssl-dev
 
 RUN cargo new --bin backend
 WORKDIR /backend
