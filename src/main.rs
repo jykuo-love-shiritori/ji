@@ -1,11 +1,13 @@
-use std::net::SocketAddr;
+use std::{env, net::SocketAddr};
 
 use axum::{
     http::Method,
     routing::{get, get_service},
     Router,
 };
-use tokio::signal;
+use sea_query::{ColumnDef, Iden, Query, SqliteQueryBuilder, Table};
+use sea_query_binder::SqlxBinder;
+use sqlx::SqlitePool;
 use tower_http::{
     cors::{Any, CorsLayer},
     services::ServeDir,
@@ -18,9 +20,24 @@ use tracing_subscriber::{
 };
 
 mod handler;
+mod shutdown;
+
+use shutdown::shutdown_signal;
+
+#[derive(Iden)]
+enum Dead {
+    Table,
+    Name,
+}
+
+#[derive(sqlx::FromRow, Debug)]
+#[allow(dead_code)]
+struct DeadStruct {
+    name: String,
+}
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let filter = filter::Targets::new()
         .with_target("tower_http::trace::on_response", LevelFilter::TRACE)
         .with_target("tower_http::trace::on_request", LevelFilter::TRACE)
@@ -32,13 +49,55 @@ async fn main() {
         .with(filter)
         .init();
 
+    dotenvy::dotenv().ok();
+    let db_url = env::var("DATABASE_URL").unwrap();
+
+    let pool = SqlitePool::connect(&db_url).await?;
+
+    let sql = Table::create()
+        .table(Dead::Table)
+        .if_not_exists()
+        .col(ColumnDef::new(Dead::Name).string())
+        .build(SqliteQueryBuilder);
+
+    sqlx::query(&sql).execute(&pool).await?;
+
+    let (sql, values) = Query::insert()
+        .into_table(Dead::Table)
+        .columns([Dead::Name])
+        .values_panic(["Bob".into()])
+        .values_panic(["Alex".into()])
+        .values_panic(["Rick".into()])
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    let (sql, values) = Query::select()
+        .columns([Dead::Name])
+        .from(Dead::Table)
+        .build_sqlx(SqliteQueryBuilder);
+
+    let results = sqlx::query_as_with::<_, DeadStruct, _>(&sql, values.clone())
+        .fetch_all(&pool)
+        .await?;
+
+    for result in results.iter() {
+        println!("{:?}", result);
+    }
+
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any);
 
     let app = Router::new()
         .route("/hello", get(handler::hello_json))
-        .nest_service("/", get_service(ServeDir::new("./frontend/dist")))
+        .nest_service(
+            "/",
+            get_service(ServeDir::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/frontend/dist"
+            ))),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 
@@ -51,31 +110,13 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Failed to start server");
-}
 
-// https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs
-async fn shutdown_signal() {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
+    let sql = Table::drop()
+        .table(Dead::Table)
+        .if_exists()
+        .build(SqliteQueryBuilder);
 
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
+    sqlx::query(&sql).execute(&pool).await?;
 
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
-    }
-
-    println!("signal received, starting graceful shutdown");
+    Ok(())
 }

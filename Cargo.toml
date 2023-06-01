@@ -7,8 +7,13 @@ exclude = ["/frontend/**"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.71"
 axum = "0.6.18"
+dotenvy = "0.15.7"
+sea-query = "0.28.5"
+sea-query-binder = { version = "0.3.1", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] }
 serde = { version = "1.0.163", features = ["derive"] }
+sqlx = { version = "0.6.3", features = ["runtime-tokio-native-tls", "sqlite"] }
 tokio = { version = "1.28.1", features = ["full"] }
 tower-http = { version = "0.4.0", features = ["fs", "trace", "cors"] }
 tracing-subscriber = "0.3.17"

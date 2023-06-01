@@ -10,3 +10,7 @@ target/
 *.pdb
 
 *.code-workspace
+
+.env
+
+*.db
