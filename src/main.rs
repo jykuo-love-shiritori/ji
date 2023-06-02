@@ -9,7 +9,7 @@ use sea_query::Iden;
 use sqlx::SqlitePool;
 use tower_http::{
     cors::{Any, CorsLayer},
-    services::ServeDir,
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 use tracing_subscriber::{
@@ -72,10 +72,17 @@ async fn main() -> anyhow::Result<()> {
                 .route("/dead", get(handler::dead_test)),
         )
         .nest_service(
-            "/",
+            "/assets",
             get_service(ServeDir::new(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/frontend/dist"
+                "/frontend/dist/assets"
+            ))),
+        )
+        .nest_service(
+            "/",
+            get_service(ServeFile::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/frontend/dist/index.html"
             ))),
         )
         .layer(cors)
