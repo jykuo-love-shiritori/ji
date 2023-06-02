@@ -5,8 +5,7 @@ use axum::{
     routing::{get, get_service},
     Router,
 };
-use sea_query::{ColumnDef, Iden, Query, SqliteQueryBuilder, Table};
-use sea_query_binder::SqlxBinder;
+use sea_query::Iden;
 use sqlx::SqlitePool;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -36,6 +35,11 @@ struct DeadStruct {
     name: String,
 }
 
+#[derive(Clone)]
+pub struct AppState {
+    pool: SqlitePool,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let filter = filter::Targets::new()
@@ -54,43 +58,15 @@ async fn main() -> anyhow::Result<()> {
 
     let pool = SqlitePool::connect(&db_url).await?;
 
-    let sql = Table::create()
-        .table(Dead::Table)
-        .if_not_exists()
-        .col(ColumnDef::new(Dead::Name).string())
-        .build(SqliteQueryBuilder);
-
-    sqlx::query(&sql).execute(&pool).await?;
-
-    let (sql, values) = Query::insert()
-        .into_table(Dead::Table)
-        .columns([Dead::Name])
-        .values_panic(["Bob".into()])
-        .values_panic(["Alex".into()])
-        .values_panic(["Rick".into()])
-        .build_sqlx(SqliteQueryBuilder);
-
-    sqlx::query_with(&sql, values).execute(&pool).await?;
-
-    let (sql, values) = Query::select()
-        .columns([Dead::Name])
-        .from(Dead::Table)
-        .build_sqlx(SqliteQueryBuilder);
-
-    let results = sqlx::query_as_with::<_, DeadStruct, _>(&sql, values.clone())
-        .fetch_all(&pool)
-        .await?;
-
-    for result in results.iter() {
-        println!("{:?}", result);
-    }
-
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any);
 
+    let state = AppState { pool };
+
     let app = Router::new()
         .route("/hello", get(handler::hello_json))
+        .route("/dead", get(handler::dead_test))
         .nest_service(
             "/",
             get_service(ServeDir::new(concat!(
@@ -99,7 +75,8 @@ async fn main() -> anyhow::Result<()> {
             ))),
         )
         .layer(cors)
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
 
@@ -110,13 +87,6 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Failed to start server");
-
-    let sql = Table::drop()
-        .table(Dead::Table)
-        .if_exists()
-        .build(SqliteQueryBuilder);
-
-    sqlx::query(&sql).execute(&pool).await?;
 
     Ok(())
 }
