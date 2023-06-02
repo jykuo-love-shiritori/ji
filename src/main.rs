@@ -65,8 +65,12 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState { pool };
 
     let app = Router::new()
-        .route("/hello", get(handler::hello_json))
-        .route("/dead", get(handler::dead_test))
+        .nest(
+            "/api",
+            Router::new()
+                .route("/hello", get(handler::hello_json))
+                .route("/dead", get(handler::dead_test)),
+        )
         .nest_service(
             "/",
             get_service(ServeDir::new(concat!(
