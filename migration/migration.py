@@ -1,13 +1,18 @@
 import pandas as pd
 import sqlite3
 import pathlib
+from dotenv import load_dotenv
+import os
 
-from cause_list import cause_list_before_96
-from cause_list import cause_list_between_97_108
-from cause_list import cause_list_after_109
+from cause_list import (
+    cause_list_before_96,
+    cause_list_between_97_108,
+    cause_list_after_109
+)
 
 data = pd.DataFrame()
 current_path = pathlib.Path(__file__).parent.resolve()
+root_path = f"{current_path}/.."
 
 for i in range(81, 97):
     df = pd.read_csv(f"{current_path}/data/dead{i}.csv")
@@ -32,6 +37,10 @@ for i in range(109, 111):
 
 # print(data.groupby('year').count())
 
-con = sqlite3.connect('dead.db')
-cursorObj = con.cursor()
+env_path = f"{root_path}/.env"
+load_dotenv(env_path)
+
+data_base_url = os.getenv("DATABASE_URL")
+# slice off `sqlite://`
+con = sqlite3.connect(f"{root_path}/{data_base_url[9:]}")
 data.to_sql("dead", con=con, if_exists='append')
