@@ -1,4 +1,4 @@
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, str::FromStr};
 
 use axum::{
     http::Method,
@@ -6,7 +6,7 @@ use axum::{
     Router,
 };
 use sea_query::Iden;
-use sqlx::SqlitePool;
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tower_http::{
     cors::{Any, CorsLayer},
     services::{ServeDir, ServeFile},
@@ -41,7 +41,7 @@ pub struct AppState {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let filter = filter::Targets::new()
         .with_target("tower_http::trace::on_response", LevelFilter::TRACE)
         .with_target("tower_http::trace::on_request", LevelFilter::TRACE)
@@ -54,9 +54,17 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     dotenvy::dotenv().ok();
-    let db_url = env::var("DATABASE_URL").unwrap();
+    let db_url = env::var("DATABASE_URL")
+        .expect("Environment variable `DATABASE_URL` not set or wrong `.env` file configuration");
 
-    let pool = SqlitePool::connect(&db_url).await?;
+    let opts = SqliteConnectOptions::from_str(&db_url)
+        .expect("Invalid DB filename")
+        .create_if_missing(true)
+        .read_only(true);
+
+    let pool = SqlitePool::connect_with(opts)
+        .await
+        .expect("Failed to create connection");
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
@@ -98,6 +106,4 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Failed to start server");
-
-    Ok(())
 }
