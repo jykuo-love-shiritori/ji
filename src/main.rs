@@ -93,7 +93,8 @@ async fn main() {
             Router::new()
                 .route("/hello", get(handler::hello_json))
                 .route("/dead", get(handler::dead_test))
-                .route("/dead_total_by_year", get(handler::dead_total_by_year)),
+                .route("/dead_total_by_year", get(handler::dead_total_by_year))
+                .route("/dead_total_by_cause", get(handler::dead_total_by_cause)),
         )
         .nest_service(
             "/assets",
