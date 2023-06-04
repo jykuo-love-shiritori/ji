@@ -26,13 +26,11 @@ use shutdown::shutdown_signal;
 #[derive(Iden)]
 enum Dead {
     Table,
-    Name,
-}
-
-#[derive(sqlx::FromRow, Debug)]
-#[allow(dead_code)]
-struct DeadStruct {
-    name: String,
+    Year,
+    Cause,
+    Sex,
+    AgeCode,
+    N,
 }
 
 #[derive(Clone)]

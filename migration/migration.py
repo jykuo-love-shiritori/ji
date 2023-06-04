@@ -42,5 +42,17 @@ load_dotenv(env_path)
 
 data_base_url = os.getenv("DATABASE_URL")
 # slice off `sqlite://`
-con = sqlite3.connect(f"{root_path}/{data_base_url[9:]}")
-data.to_sql("dead", con=con, if_exists='append')
+with sqlite3.connect(f"{root_path}/{data_base_url[9:]}") as con:
+    con.execute("DROP TABLE IF EXISTS dead")
+    con.execute(
+        """
+        CREATE TABLE dead(
+            year INTEGER NOT NULL,
+            cause TEXT NOT NULL,
+            sex INTEGER NOT NULL,
+            age_code INTEGER NOT NULL,
+            N INTEGER NOT NULL
+        )
+        """
+    )
+    data.to_sql("dead", con=con, if_exists='append', index=False)
