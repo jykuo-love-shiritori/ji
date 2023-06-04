@@ -28,7 +28,6 @@ RUN cargo build --release
 FROM debian:bullseye-slim AS deploy
 WORKDIR /app
 COPY --from=frontend /frontend/dist ./frontend/dist
-COPY --from=frontend /frontend/node_modules ./frontend/node_modules
 COPY --from=backend /backend/target/release/ji .
 
 EXPOSE 8000

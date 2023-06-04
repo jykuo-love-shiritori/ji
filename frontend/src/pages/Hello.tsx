@@ -1,5 +1,6 @@
 import { createResource } from 'solid-js';
 import { z } from 'zod';
+import BaseUrl from '../BaseUrl';
 
 const Hello = z.object({
     message: z.string()
@@ -9,7 +10,7 @@ type Hello = z.infer<typeof Hello>;
 
 export default () => {
     const fetchHello = async () =>
-        await fetch('http://localhost:8000/api/hello')
+        await fetch(`${BaseUrl}/api/hello`)
             .then((res) => res.json())
             .then((json) => Hello.parse(json));
 

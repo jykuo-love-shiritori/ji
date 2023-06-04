@@ -12,6 +12,7 @@ import {
     ScriptableContext
 } from 'chart.js';
 import { Line } from 'solid-chartjs';
+import BaseUrl from '../BaseUrl';
 
 const Year = z.object({
     year: z.array(z.number().int()),
@@ -22,7 +23,7 @@ type Year = z.infer<typeof Year>;
 
 export default () => {
     const fetchChartData = async () => {
-        const raw = await fetch('http://localhost:8000/api/dead_total_by_year')
+        const raw = await fetch(`${BaseUrl}/api/dead_total_by_year`)
             .then((res) => res.json())
             .then((json) => Year.parse(json));
 

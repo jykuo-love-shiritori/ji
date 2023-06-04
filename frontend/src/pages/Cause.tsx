@@ -7,11 +7,12 @@ import {
     Legend,
     Colors,
     Filler,
+    ArcElement,
     ChartData,
-    ChartOptions,
-    ScriptableContext
+    ChartOptions
 } from 'chart.js';
 import { Pie } from 'solid-chartjs';
+import BaseUrl from '../BaseUrl';
 
 const Cause = z.object({
     cause: z.array(z.string()),
@@ -22,7 +23,7 @@ type Cause = z.infer<typeof Cause>;
 
 export default () => {
     const fetchChartData = async () => {
-        const raw = await fetch('http://localhost:8000/api/dead_total_by_cause')
+        const raw = await fetch(`${BaseUrl}/api/dead_total_by_cause`)
             .then((res) => res.json())
             .then((json) => Cause.parse(json));
 
@@ -30,7 +31,6 @@ export default () => {
             labels: raw.cause,
             datasets: [
                 {
-                    label: 'Death',
                     data: raw.total,
                     fill: true,
                     borderWidth: 1,
@@ -61,7 +61,7 @@ export default () => {
     };
 
     onMount(() => {
-        Chart.register(Title, Tooltip, Legend, Colors, Filler);
+        Chart.register(Title, Tooltip, Legend, Colors, Filler, ArcElement);
     });
 
     const [data] = createResource(fetchChartData);
