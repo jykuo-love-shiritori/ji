@@ -23,16 +23,31 @@ mod shutdown;
 
 use shutdown::shutdown_signal;
 
-#[derive(Iden)]
 enum Dead {
     Table,
-    Name,
+    Year,
+    Cause,
+    Sex,
+    AgeCode,
+    N,
 }
 
-#[derive(sqlx::FromRow, Debug)]
-#[allow(dead_code)]
-struct DeadStruct {
-    name: String,
+impl Iden for Dead {
+    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
+        write!(
+            s,
+            "{}",
+            match self {
+                Self::Table => "dead",
+                Self::Year => "year",
+                Self::Cause => "cause",
+                Self::Sex => "sex",
+                Self::AgeCode => "age_code",
+                Self::N => "N",
+            }
+        )
+        .unwrap();
+    }
 }
 
 #[derive(Clone)]
@@ -77,7 +92,13 @@ async fn main() {
             "/api",
             Router::new()
                 .route("/hello", get(handler::hello_json))
-                .route("/dead", get(handler::dead_test)),
+                .route("/dead", get(handler::dead_test))
+                .route("/dead_total_by_year", get(handler::dead_total_by_year))
+                .route("/dead_total_by_cause", get(handler::dead_total_by_cause))
+                .route(
+                    "/dead_total_by_age_code",
+                    get(handler::dead_total_by_age_code),
+                ),
         )
         .nest_service(
             "/assets",
