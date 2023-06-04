@@ -49,15 +49,17 @@ pub async fn dead_total_by_cause(
         })
         .unzip();
 
-    let cause = cause[0..10]
+    let top = 7;
+
+    let cause = cause[0..top]
         .iter()
         .cloned()
         .chain([String::from("其他")])
         .collect();
 
-    let other_total = total[10..].iter().sum::<i32>() + other_total;
+    let other_total = total[top..].iter().sum::<i32>() + other_total;
 
-    let total = total[0..10].iter().cloned().chain([other_total]).collect();
+    let total = total[0..top].iter().cloned().chain([other_total]).collect();
 
     Ok(Json(Response { cause, total }))
 }
