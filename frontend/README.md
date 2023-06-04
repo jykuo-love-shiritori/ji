@@ -1,34 +1,31 @@
-## Usage
+# Frontend
 
-Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
+## Setup
 
-This is the reason you see a `pnpm-lock.yaml`. That being said, any package manager will work. This file can be safely be removed once you clone a template.
-
-```bash
-$ npm install # or pnpm install or yarn install
+```
+pnpm install
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
+Use
 
-## Available Scripts
+```
+pnpm install --frozen-lockfile
+```
 
-In the project directory, you can run:
+for pnpm to not overwrite the lock file
 
-### `npm dev` or `npm start`
+## Development
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```
+pnpm run dev
+```
 
-The page will reload if you make edits.<br>
+The dev server will be `localhost:3000`
 
-### `npm run build`
+## Deploy
 
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
+```
+pnpm run build
+```
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-## Deployment
-
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+The static files will be in `/dist`

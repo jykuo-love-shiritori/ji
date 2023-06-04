@@ -2,12 +2,10 @@
 name = "ji"
 version = "0.1.0"
 edition = "2021"
-exclude = ["/frontend/**"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.71"
 axum = "0.6.18"
 dotenvy = "0.15.7"
 sea-query = "0.28.5"

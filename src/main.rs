@@ -1,16 +1,15 @@
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, str::FromStr};
 
 use axum::{
     http::Method,
     routing::{get, get_service},
     Router,
 };
-use sea_query::{ColumnDef, Iden, Query, SqliteQueryBuilder, Table};
-use sea_query_binder::SqlxBinder;
-use sqlx::SqlitePool;
+use sea_query::Iden;
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tower_http::{
     cors::{Any, CorsLayer},
-    services::ServeDir,
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 use tracing_subscriber::{
@@ -36,8 +35,13 @@ struct DeadStruct {
     name: String,
 }
 
+#[derive(Clone)]
+pub struct AppState {
+    pool: SqlitePool,
+}
+
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let filter = filter::Targets::new()
         .with_target("tower_http::trace::on_response", LevelFilter::TRACE)
         .with_target("tower_http::trace::on_request", LevelFilter::TRACE)
@@ -50,56 +54,48 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     dotenvy::dotenv().ok();
-    let db_url = env::var("DATABASE_URL").unwrap();
+    let db_url = env::var("DATABASE_URL")
+        .expect("Environment variable `DATABASE_URL` not set or wrong `.env` file configuration");
 
-    let pool = SqlitePool::connect(&db_url).await?;
+    let opts = SqliteConnectOptions::from_str(&db_url)
+        .expect("Invalid DB filename")
+        .create_if_missing(true)
+        .read_only(true);
 
-    let sql = Table::create()
-        .table(Dead::Table)
-        .if_not_exists()
-        .col(ColumnDef::new(Dead::Name).string())
-        .build(SqliteQueryBuilder);
-
-    sqlx::query(&sql).execute(&pool).await?;
-
-    let (sql, values) = Query::insert()
-        .into_table(Dead::Table)
-        .columns([Dead::Name])
-        .values_panic(["Bob".into()])
-        .values_panic(["Alex".into()])
-        .values_panic(["Rick".into()])
-        .build_sqlx(SqliteQueryBuilder);
-
-    sqlx::query_with(&sql, values).execute(&pool).await?;
-
-    let (sql, values) = Query::select()
-        .columns([Dead::Name])
-        .from(Dead::Table)
-        .build_sqlx(SqliteQueryBuilder);
-
-    let results = sqlx::query_as_with::<_, DeadStruct, _>(&sql, values.clone())
-        .fetch_all(&pool)
-        .await?;
-
-    for result in results.iter() {
-        println!("{:?}", result);
-    }
+    let pool = SqlitePool::connect_with(opts)
+        .await
+        .expect("Failed to create connection");
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any);
 
+    let state = AppState { pool };
+
     let app = Router::new()
-        .route("/hello", get(handler::hello_json))
+        .nest(
+            "/api",
+            Router::new()
+                .route("/hello", get(handler::hello_json))
+                .route("/dead", get(handler::dead_test)),
+        )
         .nest_service(
-            "/",
+            "/assets",
             get_service(ServeDir::new(concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/frontend/dist"
+                "/frontend/dist/assets"
+            ))),
+        )
+        .nest_service(
+            "/",
+            get_service(ServeFile::new(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/frontend/dist/index.html"
             ))),
         )
         .layer(cors)
-        .layer(TraceLayer::new_for_http());
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
 
@@ -110,13 +106,4 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Failed to start server");
-
-    let sql = Table::drop()
-        .table(Dead::Table)
-        .if_exists()
-        .build(SqliteQueryBuilder);
-
-    sqlx::query(&sql).execute(&pool).await?;
-
-    Ok(())
 }
