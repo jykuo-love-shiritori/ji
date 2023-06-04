@@ -18,7 +18,9 @@ export default () => {
     return (
         <>
             {data.loading && <span>Loading</span>}
-            {data() && <h1 class="text-3xl">{data()?.message}</h1>}
+            {data() && (
+                <h1 class="text-3xl text-orange-500">{data()?.message}</h1>
+            )}
         </>
     );
 };
