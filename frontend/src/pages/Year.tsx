@@ -14,34 +14,33 @@ import {
 import { Line } from 'solid-chartjs';
 
 const Year = z.object({
-    year: z.array(z.number().int()).nonempty(),
-    total: z.array(z.number().int()).nonempty()
+    year: z.array(z.number().int()),
+    total: z.array(z.number().int())
 });
 
 type Year = z.infer<typeof Year>;
 
 export default () => {
-    const fetchYear = async () =>
-        await fetch('http://localhost:8000/api/dead_total_by_year')
+    const fetchChartData = async () => {
+        const raw = await fetch('http://localhost:8000/api/dead_total_by_year')
             .then((res) => res.json())
             .then((json) => Year.parse(json));
 
-    const chartData = async () => {
-        const yearData = await fetchYear();
-
         return {
-            labels: yearData.year,
+            labels: raw.year,
             datasets: [
                 {
                     label: 'Death',
-                    data: yearData.total,
+                    data: raw.total,
                     fill: true,
                     borderWidth: 1,
+                    borderColor: '#84cc16',
+                    tension: 0.3,
                     backgroundColor: (context: ScriptableContext<'line'>) => {
                         const ctx = context.chart.ctx;
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-                        gradient.addColorStop(0, 'rgba(249, 115, 22, 1)');
-                        gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient.addColorStop(0, '#36531499');
+                        gradient.addColorStop(1, '#36531400');
                         return gradient;
                     }
                 }
@@ -53,7 +52,7 @@ export default () => {
         Chart.register(Title, Tooltip, Legend, Colors, Filler);
     });
 
-    const [data] = createResource(chartData);
+    const [data] = createResource(fetchChartData);
 
     const options: ChartOptions = {
         scales: {
