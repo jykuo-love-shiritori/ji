@@ -39,8 +39,8 @@ export default () => {
                     tension: 0.3,
                     backgroundColor: (context: ScriptableContext<'line'>) => {
                         const ctx = context.chart.ctx;
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                        gradient.addColorStop(0, '#36531499');
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+                        gradient.addColorStop(0, '#365314');
                         gradient.addColorStop(1, '#36531400');
                         return gradient;
                     }
