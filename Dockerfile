@@ -2,7 +2,7 @@
 FROM node:slim AS frontend
 RUN npm install --global pnpm
 
-WORKDIR /frontend
+WORKDIR /app
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN pnpm install
 
@@ -13,8 +13,8 @@ RUN pnpm prune --prod
 FROM rust:slim AS backend
 RUN apt-get -y update && apt-get -y install pkg-config libssl-dev
 
-RUN cargo new --bin backend
-WORKDIR /backend
+WORKDIR /app
+RUN cargo init --bin .
 
 COPY Cargo.toml Cargo.lock ./
 RUN cargo build --release
@@ -27,8 +27,8 @@ RUN cargo build --release
 
 FROM debian:bullseye-slim AS deploy
 WORKDIR /app
-COPY --from=frontend /frontend/dist ./frontend/dist
-COPY --from=backend /backend/target/release/ji .
+COPY --from=frontend /app/dist ./frontend/dist
+COPY --from=backend /app/target/release/ji .
 
 EXPOSE 8000
 
