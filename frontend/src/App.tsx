@@ -1,30 +1,22 @@
 import { Component } from 'solid-js';
-import { A, Route, Routes } from '@solidjs/router';
-import Hello from './Hello';
-import Dead from './Dead';
+import { Route, Routes } from '@solidjs/router';
+import Header from './components/Header';
+import Hello from './pages/Hello';
+import Year from './pages/Year';
+import Cause from './pages/Cause';
+import Sex from './pages/Sex';
 
 const App: Component = () => {
     return (
-        <div class="h-screen bg-neutral-900 font-bold text-neutral-200">
+        <div class="bg-neutral-950 h-screen font-bold text-white">
             <div class="flex flex-col items-center">
-                <div class="my-10 flex space-x-5">
-                    <A
-                        href="/"
-                        class="text-4xl transition hover:text-neutral-400"
-                    >
-                        Hello
-                    </A>
-                    <A
-                        href="/dead"
-                        class="text-4xl transition hover:text-neutral-400"
-                    >
-                        Dead
-                    </A>
-                </div>
+                <Header />
 
                 <Routes>
                     <Route path="/" component={Hello} />
-                    <Route path="/dead" component={Dead} />
+                    <Route path="/year" component={Year} />
+                    <Route path="/cause" component={Cause} />
+                    <Route path="/sex" component={Sex} />
                 </Routes>
             </div>
         </div>

@@ -1,5 +1,5 @@
 use axum::{extract::State, http::StatusCode, Json};
-use sea_query::{Alias, Expr, Query, SqliteQueryBuilder};
+use sea_query::{Alias, Expr, Order, Query, SqliteQueryBuilder};
 use sea_query_binder::SqlxBinder;
 
 use crate::{AppState, Dead};
@@ -25,6 +25,7 @@ pub async fn dead_total_by_age_code(
         .expr_as(Expr::col(Dead::N).sum(), Alias::new("sum"))
         .from(Dead::Table)
         .group_by_columns([Dead::Sex, Dead::AgeCode])
+        .order_by(Dead::AgeCode, Order::Desc)
         .build_sqlx(SqliteQueryBuilder);
 
     let results = sqlx::query_as_with::<_, DataStruct, _>(&sql, values.clone())
@@ -33,33 +34,33 @@ pub async fn dead_total_by_age_code(
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"))?;
 
     let age_code = vec![
-        "新生兒﹝未滿四週﹞",
-        "嬰兒(滿四週至未滿一歲)",
-        "一歲",
-        "二歲",
-        "三歲",
-        "四歲",
-        "5-9歲",
-        "10-14歲",
-        "15-19歲",
-        "20-24歲",
-        "25-29歲",
-        "30-34歲",
-        "35-39歲",
-        "40-44歲",
-        "45-49歲",
-        "50-54歲",
-        "55-59歲",
-        "60-64歲",
-        "65-69歲",
-        "70-74歲",
-        "75-79歲",
-        "80-84歲",
-        "85-89歲",
-        "90-94歲",
-        "95-99歲",
-        "100歲以上",
         "不詳",
+        "100歲以上",
+        "95-99歲",
+        "90-94歲",
+        "85-89歲",
+        "80-84歲",
+        "75-79歲",
+        "70-74歲",
+        "65-69歲",
+        "60-64歲",
+        "55-59歲",
+        "50-54歲",
+        "45-49歲",
+        "40-44歲",
+        "35-39歲",
+        "30-34歲",
+        "25-29歲",
+        "20-24歲",
+        "15-19歲",
+        "10-14歲",
+        "5-9歲",
+        "四歲",
+        "三歲",
+        "二歲",
+        "一歲",
+        "嬰兒(滿四週至未滿一歲)",
+        "新生兒﹝未滿四週﹞",
     ]
     .into_iter()
     .map(String::from)
