@@ -25,7 +25,7 @@ pub async fn dead_total_by_age_code(
         .expr_as(Expr::col(Dead::N).sum(), Alias::new("sum"))
         .from(Dead::Table)
         .group_by_columns([Dead::Sex, Dead::AgeCode])
-        .order_by(Dead::AgeCode, Order::Desc)
+        .order_by(Dead::AgeCode, Order::Asc)
         .build_sqlx(SqliteQueryBuilder);
 
     let results = sqlx::query_as_with::<_, DataStruct, _>(&sql, values.clone())
@@ -33,8 +33,7 @@ pub async fn dead_total_by_age_code(
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"))?;
 
-    let age_code = vec![
-        "不詳",
+    let age_code: Vec<String> = vec![
         "100歲以上",
         "95-99歲",
         "90-94歲",
@@ -55,27 +54,50 @@ pub async fn dead_total_by_age_code(
         "15-19歲",
         "10-14歲",
         "5-9歲",
-        "四歲",
-        "三歲",
-        "二歲",
-        "一歲",
-        "嬰兒(滿四週至未滿一歲)",
-        "新生兒﹝未滿四週﹞",
+        "0-4歲",
     ]
     .into_iter()
     .map(String::from)
     .collect();
 
-    let total_male = results
+    let top = 6;
+
+    let total_male: Vec<i32> = results
         .iter()
-        .filter(|result| result.sex == 1)
-        .map(|result| result.sum)
+        .filter_map(|result| {
+            if result.sex == 1 {
+                Some(result.sum)
+            } else {
+                None
+            }
+        })
         .collect();
 
-    let total_female = results
+    let one_to_four_male: i32 = total_male[..top].iter().sum();
+    let total_male: Vec<i32> = total_male[top..]
         .iter()
-        .filter(|result| result.sex == 2)
-        .map(|result| result.sum)
+        .cloned()
+        .rev()
+        .chain([one_to_four_male])
+        .collect();
+
+    let total_female: Vec<i32> = results
+        .iter()
+        .filter_map(|result| {
+            if result.sex == 2 {
+                Some(result.sum)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let one_to_four_female: i32 = total_female[..top].iter().sum();
+    let total_female = total_female[top..]
+        .iter()
+        .cloned()
+        .rev()
+        .chain([one_to_four_female])
         .collect();
 
     Ok(Json(Response {
