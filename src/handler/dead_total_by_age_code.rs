@@ -4,7 +4,7 @@ use sea_query_binder::SqlxBinder;
 
 use crate::{AppState, Dead};
 
-#[derive(sqlx::FromRow, Debug, Clone)]
+#[derive(sqlx::FromRow, Debug)]
 struct DataStruct {
     sex: i32,
     sum: i32,
@@ -83,8 +83,13 @@ pub async fn dead_total_by_age_code(
 
     let total_female: Vec<i32> = results
         .iter()
-        .filter(|result| result.sex == 2)
-        .map(|result| result.sum)
+        .filter_map(|result| {
+            if result.sex == 2 {
+                Some(result.sum)
+            } else {
+                None
+            }
+        })
         .collect();
 
     let one_to_four_female: i32 = total_female[..top].iter().sum();
