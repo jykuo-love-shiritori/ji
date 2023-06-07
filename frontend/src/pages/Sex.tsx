@@ -64,7 +64,9 @@ export default () => {
                 stacked: true,
                 ticks: {
                     callback: (v, _) =>
-                        typeof v === 'number' ? Math.abs(v) : undefined
+                        typeof v === 'number'
+                            ? Math.abs(v).toLocaleString()
+                            : undefined
                 },
                 max: 400000,
                 min: -400000
@@ -77,7 +79,9 @@ export default () => {
             tooltip: {
                 callbacks: {
                     label: (v) => {
-                        return `${v.dataset.label}: ${Math.abs(v.parsed.x)}`;
+                        return `${v.dataset.label}: ${Math.abs(
+                            v.parsed.x
+                        ).toLocaleString()}`;
                     }
                 }
             }
