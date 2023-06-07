@@ -73,6 +73,13 @@ export default () => {
         plugins: {
             legend: {
                 position: 'right'
+            },
+            tooltip: {
+                callbacks: {
+                    label: (v) => {
+                        return `${v.dataset.label}: ${Math.abs(v.parsed.x)}`;
+                    }
+                }
             }
         },
         responsive: true,
